@@ -5,9 +5,11 @@ module ctrl (
 
     //RMII serializer communication 
     input logic byte_ready, 
+    input logic tx_end, 
     //byte_ready is the serializer saying its ready to take in a byte
     output logic [7:0] tx_byte,
     output logic byte_valid, 
+    output logic byte_last, 
 
     //Buffer communication 
     input logic fifo_q_valid,
@@ -33,6 +35,8 @@ logic [2:0] preamble_count;
 logic [1:0] fcs_count; 
 //PAD counter register
 logic [5:0] frame_byte_count;
+//IFG counter register
+logic [5:0] ifg_count; 
 
 //FSM states
 //Control the construction of a packet, adding the preamble, SFD, payload from the sources, and FCS all together 
@@ -43,7 +47,9 @@ typedef enum {
     SFD,
     FRAME,
     FCS,
-    PAD
+    PAD,
+    WAIT_TX_END,
+    IFG
 
 } states; 
 
@@ -56,6 +62,7 @@ always_ff @(posedge clk) begin
         have_word <= 1'b0;
         fcs_count <= 2'b0;
         frame_byte_count <= 6'b0;
+        ifg_count <= 6'b0; 
     end else begin
         cstate <= nstate; 
         if (cstate == IDLE) begin
@@ -80,6 +87,11 @@ always_ff @(posedge clk) begin
         if (crc_data_valid && frame_byte_count < 6'd60) begin
             frame_byte_count <= frame_byte_count + 6'd1;
         end
+        if (cstate == IFG && ifg_count < 6'd47) begin
+                ifg_count <= ifg_count + 6'd1;
+        end else if (cstate != IFG) begin
+            ifg_count <= 6'd0; 
+        end 
         
 
     end 
@@ -92,6 +104,7 @@ always_comb begin
     byte_valid = 1'b0;
     frame_started = 1'b0;
     crc_data_valid = 1'b0;
+    byte_last = 1'b0; 
     if (start && (cstate == IDLE)) begin
         nstate = PREAMBLE; 
         frame_started = 1'b1;
@@ -152,8 +165,9 @@ always_comb begin
 
         2'd3: begin
             tx_byte = fcsvalue[31:24];
+            byte_last = 1'b1; 
             if (byte_ready) begin
-                nstate = IDLE;
+                nstate = WAIT_TX_END;
             end 
         end
 
@@ -168,14 +182,26 @@ always_comb begin
     tx_byte = 8'h00;
     byte_valid = 1'b1;
 
-    if (byte_ready) begin
-        crc_data_valid = 1'b1;
+        if (byte_ready) begin
+            crc_data_valid = 1'b1;
 
-        if (frame_byte_count == 6'd59) begin
-            nstate = FCS;
+            if (frame_byte_count == 6'd59) begin
+                nstate = FCS;
+            end
         end
     end
-    end
+
+    if (cstate == WAIT_TX_END) begin
+        if (tx_end) begin
+            nstate = IFG;
+        end 
+    end 
+
+    if (cstate == IFG) begin
+        if (ifg_count == 6'd47) begin
+            nstate = IDLE; 
+        end 
+    end 
 
 
 end 
