@@ -7,8 +7,6 @@ module syncfifo #(parameter int data = 8, parameter int regamt = 8) (
     output logic [data-1:0] readvalue,
     output logic full,
     output logic empty,
-    output logic almostempty,
-    output logic almostfull
 
 );
 
@@ -62,8 +60,6 @@ always_comb begin
     full = '0;
     validread = '0;
     validwrite = '0;
-    almostempty = '0;
-    almostfull = '0;
     if (count == 0) begin
         empty = 1'b1; 
     end
@@ -72,12 +68,7 @@ always_comb begin
     end 
     validread = read && !empty;
     validwrite = write && !full;
-    if (count <= 6) begin
-        almostempty = 1'b1;
-    end 
-    if (count >= 28) begin
-        almostfull = 1'b1;
-    end 
+
 
 
 end 
