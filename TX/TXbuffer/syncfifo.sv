@@ -6,7 +6,7 @@ module syncfifo #(parameter int data = 8, parameter int regamt = 8) (
     input logic reset, 
     output logic [data-1:0] readvalue,
     output logic full,
-    output logic empty,
+    output logic empty
 
 );
 
