@@ -64,20 +64,21 @@ always_comb begin
     validwrite = '0;
     almostempty = '0;
     almostfull = '0;
-    validread = read && !empty;
-    validwrite = write && !full;
     if (count == 0) begin
         empty = 1'b1; 
     end
     if (count == regamt) begin
         full = 1'b1;
     end 
+    validread = read && !empty;
+    validwrite = write && !full;
     if (count <= 6) begin
         almostempty = 1'b1;
     end 
     if (count >= 28) begin
         almostfull = 1'b1;
     end 
+
 
 end 
 
