@@ -9,6 +9,8 @@ module ctrl_tb;
     logic byte_ready = 1'b0;
     logic [7:0] tx_byte;
     logic byte_valid;
+    logic byte_last;
+    logic tx_end = 1'b0;
 
     logic fifo_q_valid = 1'b0;
     logic [8:0] fifo_q = '0;
@@ -31,6 +33,8 @@ module ctrl_tb;
         .byte_ready(byte_ready),
         .tx_byte(tx_byte),
         .byte_valid(byte_valid),
+        .byte_last(byte_last),
+        .tx_end(tx_end),
         .fifo_q_valid(fifo_q_valid),
         .fifo_q(fifo_q),
         .tx_read_req(tx_read_req),
@@ -101,8 +105,8 @@ module ctrl_tb;
 
     //ensures that all signals are 0 when in idle 
     task automatic check_idle;
-        if ({byte_valid, tx_read_req, frame_started, crc_data_valid, have_word}
-                !== 5'b0)
+        if ({byte_valid, byte_last, tx_read_req, frame_started, crc_data_valid, have_word}
+                !== 6'b0)
             $fatal(1, "Unexpected output while idle");
 
     endtask
@@ -150,6 +154,9 @@ module ctrl_tb;
             stalled = byte_valid && !byte_ready;
             stalled_byte = tx_byte;
 
+            if (byte_last !== (byte_valid && sent == 8 + body_length + 3))
+                $fatal(1, "byte_last must mark only the fourth FCS byte");
+
             if (byte_valid && byte_ready) begin
                 if (sent < 7)
                     expected_byte = 8'h55;
@@ -171,7 +178,21 @@ module ctrl_tb;
             end
         end
 
+        //the serializer takes four clocks to send the final byte.
         repeat (4) begin
+            @(posedge clk);
+            check_idle();
+        end
+
+        @(negedge clk);
+        tx_end = 1'b1;
+        @(posedge clk);
+        check_idle();
+        @(negedge clk);
+        tx_end = 1'b0;
+
+        //wait through the interframe gap before starting the next test.
+        repeat (48) begin
             @(posedge clk);
             check_idle();
         end
@@ -187,7 +208,7 @@ module ctrl_tb;
         @(posedge clk);
         check_idle();
 
-        // no reset inbetween frames so the controller is forced to reinitialize its counts 
+        //no reset inbetween frames so the controller is forced to reinitialize its counts 
         check_frame(58, 32'h4FAC6670);
         check_frame(59, 32'h51862042);
         check_frame(60, 32'h0D354A46);
