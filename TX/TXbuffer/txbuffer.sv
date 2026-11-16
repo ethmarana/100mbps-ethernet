@@ -1,4 +1,4 @@
-module txbuffer (
+module txbuffer #(parameter int CUT_THROUGH = 0) (
     input  logic clk,
     input  logic reset,
 
@@ -16,11 +16,12 @@ module txbuffer (
     
 
     // frame control -> tx ctrl
-    input  logic       frame_started,
     output logic       frame_ready
     //frame started is tx ctrl telling buffer that its taking a frame from the buffer
     //frame ready is the buffer telling the tx ctrl that it has a frame ready for it
 );
+
+logic [12:0] fifo_count;
 
 //wr valid means the frame source is offering a byte
 //wr ready means the buffer is ready to take the byte 
@@ -50,7 +51,8 @@ syncfifo #(.data(9), .regamt(4096)) buffer (
     .full(fifo_full),
     .readvalue(fifo_q),
     .empty(fifo_empty),
-    .read(tx_read_req)
+    .read(tx_read_req),
+    .count(fifo_count)
 );
 
 //frame counter 
@@ -64,16 +66,16 @@ always_ff @(posedge clk) begin
     end else begin
         fifo_q_valid <= tx_read_req && ~fifo_empty;
 
-        if (fifo_write && wr_last && !frame_started) begin
+        if (fifo_write && wr_last && !(fifo_q_valid && fifo_q[8])) begin
             frame_counter <= frame_counter + 13'd1;
-        end else if (frame_started && !(fifo_write && wr_last)) begin
+        end else if ((fifo_q_valid && fifo_q[8]) && !(fifo_write && wr_last)) begin
             frame_counter <= frame_counter - 13'd1;
         end
     end
 end
 
 always_comb begin
-    frame_ready = frame_counter != 13'd0;
+    frame_ready = (frame_counter != 0) || (CUT_THROUGH && (fifo_count >= 13'd16));
 end 
 
 endmodule 

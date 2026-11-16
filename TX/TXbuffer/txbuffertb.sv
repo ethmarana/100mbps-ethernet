@@ -18,6 +18,7 @@ logic fifo_q_valid;
 logic       frame_started;
 logic       frame_ready;
 
+
 txbuffer dut (
     .clk(clk),
     .reset(reset),
@@ -29,7 +30,8 @@ txbuffer dut (
     .fifo_q(fifo_q),
     .fifo_q_valid(fifo_q_valid),
     .frame_started(frame_started),
-    .frame_ready(frame_ready)
+    .frame_ready(frame_ready),
+    .count(fifo_count)
 );
 
 always #10 clk = ~clk; 

@@ -6,7 +6,8 @@ module syncfifo #(parameter int data = 8, parameter int regamt = 8) (
     input logic reset, 
     output logic [data-1:0] readvalue,
     output logic full,
-    output logic empty
+    output logic empty,
+    output logic [$clog2(regamt+1)-1:0] count
 
 );
 
@@ -15,7 +16,6 @@ module syncfifo #(parameter int data = 8, parameter int regamt = 8) (
 
 logic [$clog2(regamt)-1:0] writeptr;
 logic [$clog2(regamt)-1:0] readptr;
-logic [$clog2(regamt+1)-1:0] count; 
 logic [data-1:0] mem [0:regamt-1];
 logic validwrite; 
 logic validread;

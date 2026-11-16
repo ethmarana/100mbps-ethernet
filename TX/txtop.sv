@@ -1,4 +1,4 @@
-module txtop (
+module txtop #(parameter int CUT_THROUGH = 0) (
     input logic clk,
     input logic reset, 
 
@@ -38,7 +38,7 @@ logic crc_data_valid;
 logic have_word; 
 
 
-txbuffer buffertop (
+txbuffer #(.CUT_THROUGH(CUT_THROUGH)) buffertop (
     .clk(clk),
     .reset(reset),
     .wr_data(wr_data), 
@@ -48,7 +48,6 @@ txbuffer buffertop (
     .tx_read_req(tx_read_req),
     .fifo_q(fifo_q),
     .fifo_q_valid(fifo_q_valid),
-    .frame_started(frame_started),
     .frame_ready(frame_ready)
 );
 
