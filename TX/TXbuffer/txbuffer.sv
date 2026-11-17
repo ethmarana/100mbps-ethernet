@@ -1,4 +1,4 @@
-module txbuffer #(parameter int CUT_THROUGH = 0, parameter int START_THRESHOLD = 16) (
+module txbuffer #(parameter int CUT_THROUGH = 0, parameter int START_THRESHOLD = 1) (
     input  logic clk,
     input  logic reset,
 
