@@ -1,4 +1,15 @@
-module txtop #(parameter int CUT_THROUGH = 0) (
+module txtop #(
+    //setting CUT_THROUGH to 0 makes the TX into store and forward mode,
+    //waiting for the full frame to be loaded in the buffer to start 
+    //transmitting
+    //when CUT_THROUGH = 1, the TX is in cut-through mode, meaning that
+    //it can start transmitting frames before the full frame is loaded
+    //into the buffer
+    //START_THRESHOLD controls this threshold, with 16 bytes needing
+    //16 bytes of the frame to be loaded before thresholding, and so on
+    parameter int CUT_THROUGH = 1,
+    parameter int START_THRESHOLD = 1
+); (
     input logic clk,
     input logic reset, 
 
@@ -38,7 +49,7 @@ logic crc_data_valid;
 logic have_word; 
 
 
-txbuffer #(.CUT_THROUGH(CUT_THROUGH)) buffertop (
+txbuffer #(.CUT_THROUGH(CUT_THROUGH), .START_THRESHOLD(START_THRESHOLD)) buffertop (
     .clk(clk),
     .reset(reset),
     .wr_data(wr_data), 

@@ -1,4 +1,4 @@
-module txbuffer #(parameter int CUT_THROUGH = 0) (
+module txbuffer #(parameter int CUT_THROUGH = 0, parameter int START_THRESHOLD = 16) (
     input  logic clk,
     input  logic reset,
 
@@ -75,7 +75,7 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-    frame_ready = (frame_counter != 0) || (CUT_THROUGH && (fifo_count >= 13'd16));
+    frame_ready = (frame_counter != 0) || (CUT_THROUGH && (fifo_count >= START_THRESHOLD));
 end 
 
 endmodule 
